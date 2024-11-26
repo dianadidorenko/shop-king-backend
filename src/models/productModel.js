@@ -8,6 +8,7 @@ const variationsSchema = new mongoose.Schema({
   quantityAvailable: { type: Number, required: true },
 });
 
+// Done
 const offerSchema = new mongoose.Schema({
   startDate: { type: Date, required: true },
   endDate: { type: Date, required: true },
@@ -15,23 +16,25 @@ const offerSchema = new mongoose.Schema({
   flashSale: { type: Boolean, required: true },
 });
 
+// Done
 const seoSchema = new mongoose.Schema({
-  metaTitle: { type: String },
-  metaDescription: { type: String },
-  metaKeywords: { type: [String] },
-  metaImage: { type: String },
+  title: { type: String },
+  description: { type: String },
+  metaKeywords: { type: String },
+  image: { type: String },
 });
 
+// Done
 const shippingReturnSchema = new mongoose.Schema({
   shippingType: { type: String, enum: ["Free", "Flat Rate"], default: "Free" },
-  shippingCost: { type: String },
+  shippingCost: { type: Number },
   isProductQuantityMultiply: { type: Boolean, required: true },
   shippingAndReturnPolicy: { type: String },
 });
 
 const videosSchema = new mongoose.Schema({
-  videoProvider: { type: String, required: true },
-  videoLink: { type: String, required: true },
+  provider: { type: String, required: true },
+  link: { type: String, required: true },
 });
 
 const productSchema = new mongoose.Schema(

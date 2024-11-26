@@ -1,10 +1,16 @@
 import Fastify from "fastify";
+import fastifyJwt from "@fastify/jwt";
+import cors from "@fastify/cors";
+import dotenv from "dotenv";
+import cloudinary from "cloudinary";
+
 import { startDb } from "./config/dbConnect.js";
 import authRoutes from "./routes/authRoutes.js";
-import fastifyJwt from "@fastify/jwt";
 import productRoutes from "./routes/productRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
-import cors from "@fastify/cors";
+import uploadRoutes from "./routes/uploadRoutes.js";
+
+dotenv.config();
 
 const fastify = Fastify({ logger: true });
 
@@ -14,14 +20,17 @@ fastify.register(cors, {
   allowedHeaders: ["Content-Type", "Authorization"],
 });
 
-// Register fastify jwt
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
 fastify.register(fastifyJwt, { secret: "supersecret" });
+
 fastify.register(productRoutes);
 fastify.register(orderRoutes);
-
-// fastify.get("/", (req, reply) => {
-//   reply.send({ msg: "Hello From Server" });
-// });
+fastify.register(uploadRoutes);
 
 fastify.decorate("authenticate", async function (req, reply) {
   try {
@@ -45,3 +54,7 @@ const start = async () => {
 };
 
 start();
+
+// fastify.get("/", (req, reply) => {
+//   reply.send({ msg: "Hello From Server" });
+// });

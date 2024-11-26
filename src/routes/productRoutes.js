@@ -125,4 +125,87 @@ export default async function productRoutes(fastify, options) {
 
   // CHeck If Any Variations Has Low Stock (less than 5)
   // fastify.get("/api/products/:id/availablity", async (req, reply) => {});
+
+  fastify.post("/api/products/:id/videos", async (req, reply) => {
+    const { id } = req.params;
+    const { videos } = req.body;
+
+    if (!videos || !Array.isArray(videos) || videos.length === 0) {
+      return reply.code(400).send({ status: false, msg: "Invalid video data" });
+    }
+
+    try {
+      const product = await Product.findById(id);
+      if (!product) {
+        return reply
+          .code(404)
+          .send({ status: false, msg: "Product not found" });
+      }
+
+      product.videos.push(...videos);
+      await product.save();
+
+      reply.code(201).send({
+        status: true,
+        msg: "Videos added successfully",
+        data: product.videos,
+      });
+    } catch (error) {
+      reply.code(500).send({
+        status: false,
+        msg: "Error adding videos",
+        error: error.message,
+      });
+    }
+  });
+
+  fastify.get("/api/products/:id/videos", async (req, reply) => {
+    const { id } = req.params;
+
+    try {
+      const product = await Product.findById(id);
+      if (!product) {
+        return reply.code(404).send({ status: false, msg: "Videos not found" });
+      }
+
+      reply.code(201).send({
+        status: true,
+        data: product.videos,
+      });
+    } catch (error) {
+      reply.code(500).send({
+        status: false,
+        error: error.message,
+      });
+    }
+  });
+
+  fastify.delete("/api/products/:id/videos/:videoId", async (req, reply) => {
+    const { id, videoId } = req.params;
+
+    try {
+      const product = await Product.findById(id);
+      if (!product) {
+        return reply
+          .code(404)
+          .send({ status: false, msg: "Product not found" });
+      }
+
+      const video = product.videos.id(videoId);
+
+      if (!video) {
+        return reply.code(404).send({ error: "Video not found" });
+      }
+
+      video.remove();
+      await product.save();
+      reply.send({status: true, product});
+    } catch (error) {
+      reply.code(500).send({
+        status: false,
+        msg: "Error adding videos",
+        error: error.message,
+      });
+    }
+  });
 }
