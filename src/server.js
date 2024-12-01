@@ -9,6 +9,8 @@ import authRoutes from "./routes/authRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
+import categoryRoutes from "./routes/categoryRoutes.js";
+import brandRoutes from "./routes/brandRoutes.js";
 
 dotenv.config();
 
@@ -31,6 +33,8 @@ fastify.register(fastifyJwt, { secret: "supersecret" });
 fastify.register(productRoutes);
 fastify.register(orderRoutes);
 fastify.register(uploadRoutes);
+fastify.register(categoryRoutes);
+fastify.register(brandRoutes);
 
 fastify.decorate("authenticate", async function (req, reply) {
   try {

@@ -5,10 +5,9 @@ const variationsSchema = new mongoose.Schema({
   size: { type: String },
   price: { type: Number, required: true },
   sku: { type: String, required: true },
-  quantityAvailable: { type: Number, required: true },
+  quantity: { type: Number, required: true },
 });
 
-// Done
 const offerSchema = new mongoose.Schema({
   startDate: { type: Date, required: true },
   endDate: { type: Date, required: true },
@@ -16,7 +15,6 @@ const offerSchema = new mongoose.Schema({
   flashSale: { type: Boolean, required: true },
 });
 
-// Done
 const seoSchema = new mongoose.Schema({
   title: { type: String },
   description: { type: String },
@@ -24,7 +22,6 @@ const seoSchema = new mongoose.Schema({
   image: { type: String },
 });
 
-// Done
 const shippingReturnSchema = new mongoose.Schema({
   shippingType: { type: String, enum: ["Free", "Flat Rate"], default: "Free" },
   shippingCost: { type: Number },

@@ -11,7 +11,7 @@ export default async function uploadRoutes(fastify, options) {
   fastify.post("/api/upload", async function (req, reply) {
     try {
       const data = await req.file();
-      
+
       if (!data) {
         return reply.code(400).send({ error: "No file uploaded" });
       }

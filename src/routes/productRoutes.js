@@ -123,33 +123,27 @@ export default async function productRoutes(fastify, options) {
     }
   });
 
-  // CHeck If Any Variations Has Low Stock (less than 5)
-  // fastify.get("/api/products/:id/availablity", async (req, reply) => {});
-
+  // Add Videos
   fastify.post("/api/products/:id/videos", async (req, reply) => {
     const { id } = req.params;
-    const { videos } = req.body;
-
-    if (!videos || !Array.isArray(videos) || videos.length === 0) {
-      return reply.code(400).send({ status: false, msg: "Invalid video data" });
-    }
+    const videoData = req.body;
 
     try {
-      const product = await Product.findById(id);
+      const product = await Product.findByIdAndUpdate(
+        id,
+        {
+          $push: { videos: videoData.videos },
+        },
+        { new: true }
+      );
+
       if (!product) {
         return reply
           .code(404)
           .send({ status: false, msg: "Product not found" });
       }
 
-      product.videos.push(...videos);
-      await product.save();
-
-      reply.code(201).send({
-        status: true,
-        msg: "Videos added successfully",
-        data: product.videos,
-      });
+      reply.send(product);
     } catch (error) {
       reply.code(500).send({
         status: false,
@@ -159,16 +153,47 @@ export default async function productRoutes(fastify, options) {
     }
   });
 
+  // Edit Videos
+  fastify.put("/api/products/:id/videos/:videoId", async (req, reply) => {
+    const { id, videoId } = req.params;
+    const videoData = req.body;
+
+    try {
+      const product = await Product.findById(id);
+
+      if (!product) {
+        return reply
+          .code(404)
+          .send({ status: false, msg: "Product not found" });
+      }
+
+      const video = product.videos.id(videoId);
+      if (!video) {
+        return reply.code(404).send({ status: false, msg: "Video not found" });
+      }
+      Object.assign(video, videoData);
+      await product.save();
+      reply.send(product);
+    } catch (error) {
+      reply.code(500).send({
+        status: false,
+        msg: "Error adding videos",
+        error: error.message,
+      });
+    }
+  });
+
+  // Get Videos
   fastify.get("/api/products/:id/videos", async (req, reply) => {
     const { id } = req.params;
 
     try {
-      const product = await Product.findById(id);
+      const product = await Product.findById(id).select("videos");
       if (!product) {
         return reply.code(404).send({ status: false, msg: "Videos not found" });
       }
 
-      reply.code(201).send({
+      reply.send({
         status: true,
         data: product.videos,
       });
@@ -180,6 +205,7 @@ export default async function productRoutes(fastify, options) {
     }
   });
 
+  // Delete Videos
   fastify.delete("/api/products/:id/videos/:videoId", async (req, reply) => {
     const { id, videoId } = req.params;
 
@@ -191,15 +217,19 @@ export default async function productRoutes(fastify, options) {
           .send({ status: false, msg: "Product not found" });
       }
 
-      const video = product.videos.id(videoId);
+      const videoIndex = product.videos.findIndex(
+        (video) => video._id.toString() === videoId
+      );
 
-      if (!video) {
-        return reply.code(404).send({ error: "Video not found" });
+      if (videoIndex === -1) {
+        return reply
+          .code(404)
+          .send({ status: false, error: "Video Not Found" });
       }
-
-      video.remove();
+      product.videos.splice(videoIndex, 1);
       await product.save();
-      reply.send({status: true, product});
+
+      reply.send({ status: true, product });
     } catch (error) {
       reply.code(500).send({
         status: false,
@@ -208,4 +238,214 @@ export default async function productRoutes(fastify, options) {
       });
     }
   });
+
+  // Add Images
+  fastify.post("/api/products/:id/images", async (req, reply) => {
+    const { id } = req.params;
+    const { imageUrl } = req.body;
+
+    try {
+      const product = await Product.findByIdAndUpdate(
+        id,
+        {
+          $push: { images: imageUrl },
+        },
+        { new: true }
+      );
+
+      if (!product) {
+        return reply
+          .code(404)
+          .send({ status: false, msg: "Product not found" });
+      }
+
+      reply.send({ status: true, msg: "Image Added Successfully", product });
+    } catch (error) {
+      reply.code(500).send({
+        status: false,
+        msg: "Error adding images",
+        error: error.message,
+      });
+    }
+  });
+
+  // Get Images
+  fastify.get("/api/products/:id/images", async (req, reply) => {
+    const { id } = req.params;
+
+    try {
+      const product = await Product.findById(id).select("images");
+      if (!product) {
+        return reply.code(404).send({ status: false, msg: "Images not found" });
+      }
+
+      reply.send({
+        status: true,
+        data: product.images,
+      });
+    } catch (error) {
+      reply.code(500).send({
+        status: false,
+        error: error.message,
+      });
+    }
+  });
+
+  // Delete Images
+  fastify.delete("/api/products/:id/images", async (req, reply) => {
+    const { id } = req.params;
+    const { imageUrl } = req.body;
+
+    try {
+      const product = await Product.findById(id);
+      if (!product) {
+        return reply
+          .code(404)
+          .send({ status: false, msg: "Product not found" });
+      }
+
+      const imageIndex = product.images.indexOf(imageUrl);
+      if (imageIndex === -1) {
+        return reply
+          .code(404)
+          .send({ status: false, error: "Image Not Found" });
+      }
+      product.images.splice(imageIndex, 1);
+      await product.save();
+
+      reply.send({ status: true, msg: "Image Deleted Successfully" });
+    } catch (error) {
+      reply.code(500).send({
+        status: false,
+        msg: "Error deleting image",
+        error: error.message,
+      });
+    }
+  });
+
+  // Add Variations
+  fastify.post("/api/products/:id/variations", async (req, reply) => {
+    const { id } = req.params;
+    const variationData = req.body;
+
+    try {
+      const product = await Product.findByIdAndUpdate(
+        id,
+        {
+          $push: { variations: variationData },
+        },
+        { new: true }
+      );
+
+      if (!product) {
+        return reply
+          .code(404)
+          .send({ status: false, msg: "Product not found" });
+      }
+
+      reply.send({ status: true, msg: "Image Added Successfully", product });
+    } catch (error) {
+      reply.code(500).send({
+        status: false,
+        msg: "Error adding images",
+        error: error.message,
+      });
+    }
+  });
+
+  // Get Variations
+  fastify.get("/api/products/:id/variations", async (req, reply) => {
+    const { id } = req.params;
+
+    try {
+      const product = await Product.findById(id).select("variations");
+      if (!product) {
+        return reply
+          .code(404)
+          .send({ status: false, msg: "Variations not found" });
+      }
+
+      reply.send({
+        status: true,
+        data: product.variations,
+      });
+    } catch (error) {
+      reply.code(500).send({
+        status: false,
+        error: error.message,
+      });
+    }
+  });
+
+  // Edit Variations
+  fastify.put(
+    "/api/products/:id/variations/:variationId",
+    async (req, reply) => {
+      const { id, variationId } = req.params;
+      const variationData = req.body;
+
+      try {
+        const product = await Product.findById(id);
+
+        if (!product) {
+          return reply
+            .code(404)
+            .send({ status: false, msg: "Product not found" });
+        }
+
+        const variation = product.variations.id(variationId);
+        if (!variation) {
+          return reply
+            .code(404)
+            .send({ status: false, msg: "Variation not found" });
+        }
+        Object.assign(variation, variationData);
+        await product.save();
+        reply.send(product);
+      } catch (error) {
+        reply.code(500).send({
+          status: false,
+          msg: "Error adding variations",
+          error: error.message,
+        });
+      }
+    }
+  );
+
+  // Delete Variations
+  fastify.delete(
+    "/api/products/:id/variations/:variationId",
+    async (req, reply) => {
+      const { id, variationId } = req.params;
+
+      try {
+        const product = await Product.findById(id);
+        if (!product) {
+          return reply
+            .code(404)
+            .send({ status: false, msg: "Product not found" });
+        }
+
+        const variationIndex = product.variations.findIndex(
+          (variation) => variation._id.toString() === variationId
+        );
+
+        if (variationIndex === -1) {
+          return reply
+            .code(404)
+            .send({ status: false, error: "Variation Not Found" });
+        }
+        product.variations.splice(variationId, 1);
+        await product.save();
+
+        reply.send({ status: true, product });
+      } catch (error) {
+        reply.code(500).send({
+          status: false,
+          msg: "Error adding variations",
+          error: error.message,
+        });
+      }
+    }
+  );
 }
