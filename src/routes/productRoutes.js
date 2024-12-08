@@ -1,9 +1,13 @@
+import slugify from "slugify";
 import { Product } from "../models/productModel.js";
 
 export default async function productRoutes(fastify, options) {
   // Create a product
   fastify.post("/api/products", async (req, reply) => {
     try {
+      if (req.body.name) {
+        req.body.slug = slugify(req.body.name.toLowerCase());
+      }
       const product = new Product(req.body);
       await product.save();
 
@@ -52,10 +56,30 @@ export default async function productRoutes(fastify, options) {
     }
   });
 
+  // Fetch A Single Product By SLug
+  fastify.get("/api/products/:slug/byslug", async (req, reply) => {
+    try {
+      const slug = req.params.slug;
+      const product = await Product.findOne({ slug: slug }).populate("offer");
+      if (!product)
+        return reply
+          .code(400)
+          .send({ status: false, msg: "Product Not Found" });
+      reply
+        .code(200)
+        .send({ status: true, msg: "Product Found", data: product });
+    } catch (error) {
+      reply.code(500).send({ status: false, msg: "Something went wrong" });
+    }
+  });
+
   // Update A Single Product By Id
   fastify.put("/api/products/:id", async (req, reply) => {
     try {
       const id = req.params.id;
+      if (req.body.name) {
+        req.body.slug = slugify(req.body.name.toLowerCase());
+      }
       const product = await Product.findByIdAndUpdate(id, req.body, {
         new: true,
       });
@@ -448,4 +472,18 @@ export default async function productRoutes(fastify, options) {
       }
     }
   );
+
+  // Get Products With Flash Sales
+  fastify.get("/api/products/flash-sales", async (request, reply) => {
+    try {
+      const flasSaleProducts = await Product.find({
+        "offer.flashSale": true,
+      });
+      reply.send({ status: true, data: flasSaleProducts });
+    } catch (error) {
+      reply
+        .status(500)
+        .send({ status: false, error: "Не удалось получить флеш-распродажи." });
+    }
+  });
 }

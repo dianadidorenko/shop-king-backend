@@ -11,6 +11,8 @@ import orderRoutes from "./routes/orderRoutes.js";
 import uploadRoutes from "./routes/uploadRoutes.js";
 import categoryRoutes from "./routes/categoryRoutes.js";
 import brandRoutes from "./routes/brandRoutes.js";
+import wishlistRoutes from "./routes/wishlistRoutes.js";
+import cartRoutes from "./routes/cartRoutes.js";
 
 dotenv.config();
 
@@ -35,11 +37,17 @@ fastify.register(orderRoutes);
 fastify.register(uploadRoutes);
 fastify.register(categoryRoutes);
 fastify.register(brandRoutes);
+fastify.register(wishlistRoutes);
+fastify.register(cartRoutes);
 
 fastify.decorate("authenticate", async function (req, reply) {
   try {
     await req.jwtVerify();
+    console.log("Authenticating user...");
+    const user = req.user; // Проверьте, откуда берется user
+    console.log("User authenticated:", user);
   } catch (error) {
+    console.error("Authentication failed:", error);
     reply.code(500).send({ status: false, msg: "Something went wrong" });
   }
 });

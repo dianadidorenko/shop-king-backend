@@ -31,10 +31,15 @@ export default async function categoryRoutes(fastify, options) {
 
   // Добавить новую категорию
   fastify.post("/api/category", async (request, reply) => {
-    const { category, subcategory, status } = request.body;
+    const { category, subcategory, image, status } = request.body;
 
     try {
-      const newCategory = new Category({ category, subcategory, status });
+      const newCategory = new Category({
+        category,
+        subcategory,
+        image,
+        status,
+      });
       const result = await newCategory.save();
       reply.status(201).send({
         status: true,

@@ -37,12 +37,13 @@ const videosSchema = new mongoose.Schema({
 const productSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
+    slug: { type: String, required: true },
     sku: { type: String, required: true, unique: true },
     category: { type: String, required: true },
+    subcategory: { type: String, required: true },
     barcode: { type: String },
     buyingPrice: { type: Number, required: true },
     sellingPrice: { type: Number, required: true },
-    tax: { type: Number, required: true },
     brand: { type: String, required: true },
     status: { type: String, enum: ["Active", "Inactive"], required: true },
     canPurchaseAble: { type: Boolean, required: true },
