@@ -14,8 +14,8 @@ const addressSchema = new mongoose.Schema({
   fullName: { type: String, required: true },
   email: { type: String, required: true },
   phone: { type: String, required: true },
-  addressLine1: { type: String, required: true },
-  addressLine2: { type: String, required: true },
+  // addressLine1: { type: String, required: true },
+  addressLine2: { type: String },
   city: { type: String, required: true },
   state: { type: String, required: true },
   zipcode: { type: String, required: true },
@@ -26,14 +26,15 @@ const orderSchema = new mongoose.Schema(
   {
     orderId: { type: String, unique: true, required: true },
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-    orderDate: { type: Date, required: true },
     paymentType: { type: String, required: true },
     orderType: { type: String, required: true },
     orderStatus: {
       type: String,
       enum: [
         "Pending",
-        "Paid",
+        "Accepted",
+        "Shipped",
+        "On the Way",
         "Delivered",
         "Cancelled",
         "Returned",

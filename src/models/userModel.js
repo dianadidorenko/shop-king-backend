@@ -3,18 +3,21 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 
 const addressSchema = new mongoose.Schema({
-  street: { type: String, required: true },
+  fullName: { type: String, required: true },
+  email: { type: String, required: true },
+  phone: { type: String, required: true },
+  streetAddress: { type: String, required: true },
   city: { type: String, required: true },
   state: { type: String, required: true },
-  zipcode: { type: String, required: true },
   country: { type: String, required: true },
+  zipcode: { type: String, required: true },
 });
 
 const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
-    mobile: { type: String, required: true },
+    phone: { type: String, required: true },
     role: { type: String, enum: ["customer", "admin"], default: "customer" },
     password: { type: String, required: true },
     resetPasswordToken: { type: String },

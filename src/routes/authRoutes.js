@@ -1,32 +1,41 @@
 import { User } from "../models/userModel.js";
 import crypto from "crypto";
+import bcrypt from "bcryptjs";
 
 export default async function authRoutes(fastify, options) {
   // User Registration
   fastify.post("/api/register", async (req, reply) => {
-    const { name, email, mobile, password } = req.body;
+    const { name, email, phone, password } = req.body;
 
-    const userExists = await User.findOne({ email: email.toLowerCase() });
+    try {
+      if (!name || !email || !phone || !password) {
+        return reply
+          .status(400)
+          .send({ status: false, msg: "All fields are required!" });
+      }
 
-    if (userExists)
-      return reply
-        .status(400)
-        .send({ status: false, msg: "User already exists!" });
+      const userExists = await User.findOne({ email: email.toLowerCase() });
+      if (userExists) {
+        return reply
+          .status(400)
+          .send({ status: false, msg: "User already exists!" });
+      }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+      const newUser = new User({
+        name,
+        email: email.toLowerCase(),
+        phone,
+        password,
+      });
+      await newUser.save();
 
-    const newUser = new User({
-      name,
-      email: email.toLowerCase(),
-      mobile,
-      password: hashedPassword,
-    });
-    await newUser.save();
-
-    reply.status(201).send({
-      status: true,
-      msg: "User Registered Successfully!",
-    });
+      reply
+        .status(201)
+        .send({ status: true, msg: "User Registered Successfully!" });
+    } catch (error) {
+      console.error("Registration error:", error);
+      reply.status(500).send({ status: false, msg: "Internal Server Error" });
+    }
   });
 
   // User Login
@@ -68,6 +77,50 @@ export default async function authRoutes(fastify, options) {
     });
   });
 
+  // Change Password
+  fastify.put(
+    "/api/user/change-password",
+    { preValidation: [fastify.authenticate] },
+    async (req, reply) => {
+      const { oldPassword, newPassword, confirmPassword } = req.body;
+      const userId = req.user.userId;
+
+      try {
+        const user = await User.findById(userId);
+
+        if (!user)
+          return reply
+            .status(400)
+            .send({ status: false, msg: "User not found" });
+
+        const isMatch = await user.comparePassword(oldPassword);
+        if (!isMatch) {
+          return reply
+            .code(400)
+            .send({ status: false, msg: "Old password is incorrect" });
+        }
+
+        if (newPassword !== confirmPassword) {
+          return reply.code(400).send({
+            status: false,
+            msg: "New password and confirm password is incorrect",
+          });
+        }
+
+        user.password = await bcrypt.hash(newPassword, 10);
+        await user.save();
+
+        reply.status(200).send({
+          status: true,
+          msg: "Password changed successfully",
+        });
+      } catch (error) {
+        console.error(error);
+        reply.code(500).send({ status: false, msg: "Something went wrong" });
+      }
+    }
+  );
+
   // Reset Password
   fastify.post("/api/reset-password/:token", async (req, reply) => {
     const { token } = req.params;
@@ -97,13 +150,30 @@ export default async function authRoutes(fastify, options) {
   });
 
   // Get A User By ID
-  fastify.get("/api/users/:id", async (req, reply) => {
-    const id = req.params.id;
-    const user = await User.findById(id).select("-password");
-    if (!user)
-      return reply.status(400).send({ status: false, msg: "User Not Found" });
-    reply.status(200).send({ status: true, msg: "User Found", user: user });
-  });
+  fastify.get(
+    "/api/user",
+    { preValidation: [fastify.authenticate] },
+    async (req, reply) => {
+      const id = req.user?.userId;
+      const user = await User.findById(id).select("-password");
+      if (!user)
+        return reply.status(400).send({ status: false, msg: "User Not Found" });
+      reply.status(200).send({ status: true, msg: "User Found", user: user });
+    }
+  );
+
+  // Update A User By ID
+  fastify.put(
+    "/api/users",
+    { preValidation: [fastify.authenticate] },
+    async (req, reply) => {
+      const id = req.user?.userId;
+      const user = await User.findByIdAndUpdate(id, req.body, { new: true });
+      if (!user)
+        return reply.status(400).send({ status: false, msg: "User Not Found" });
+      reply.status(200).send({ status: true, msg: "User Found", user: user });
+    }
+  );
 
   // Delete A User
   fastify.delete("/api/users/:id", async (req, reply) => {

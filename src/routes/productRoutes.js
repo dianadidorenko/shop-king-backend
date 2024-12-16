@@ -26,15 +26,108 @@ export default async function productRoutes(fastify, options) {
   });
 
   // Fetch All Products
+  // fastify.get("/api/products", async (req, reply) => {
+  //   try {
+  //     const products = await Product.find();
+  //     reply.code(200).send({
+  //       status: true,
+  //       msg: "Products Fetched Successfully",
+  //       data: products,
+  //     });
+  //   } catch (error) {
+  //     reply.code(500).send({ status: false, msg: "Something went wrong" });
+  //   }
+  // });
+
+  // Filtering and Sorting
   fastify.get("/api/products", async (req, reply) => {
     try {
-      const products = await Product.find();
+      const {
+        color,
+        size,
+        brand,
+        category,
+        subcategory,
+        minPrice,
+        maxPrice,
+        status,
+        canPurchaseAble,
+        refundable,
+        sortBy,
+        search,
+      } = req.query;
+
+      const filter = {};
+
+      if (color) {
+        filter["variations.color"] = color;
+      }
+      if (size) {
+        filter["variations.size"] = size;
+      }
+      if (brand) {
+        filter.brand = brand;
+      }
+      if (category) {
+        filter.category = category;
+      }
+      if (subcategory) {
+        filter.subcategory = subcategory;
+      }
+      if (status) {
+        filter.status = status;
+      }
+
+      if (canPurchaseAble !== undefined) {
+        filter.canPurchaseAble = canPurchaseAble === "true";
+      }
+      if (refundable !== undefined) {
+        filter.refundable = refundable === "true";
+      }
+
+      // Search by name or description
+      if (search) {
+        filter.$or = [
+          { name: { $regex: search, $options: "i" } },
+          { description: { $regex: search, $options: "i" } },
+        ];
+      }
+
+      // Price filtering
+      if (
+        (minPrice !== "0" && minPrice !== undefined) ||
+        (maxPrice !== "0" && maxPrice !== undefined)
+      ) {
+        filter.sellingPrice = {};
+        if (minPrice) {
+          filter.sellingPrice.$gte = Number(minPrice);
+        }
+        if (maxPrice) {
+          filter.sellingPrice.$lte = Number(maxPrice);
+        }
+      }
+
+      // Sorting options
+      const sortOptions = sortBy
+        ? sortBy === "price-low-to-high"
+          ? { sellingPrice: 1 }
+          : sortBy === "price-high-to-low"
+          ? { sellingPrice: -1 }
+          : sortBy === "newest"
+          ? { createdAt: -1 }
+          : {}
+        : {};
+
+      // Fetch filtered and sorted products
+      const products = await Product.find(filter).sort(sortOptions);
+
       reply.code(200).send({
         status: true,
-        msg: "Products Fetched Successfully",
+        msg: "Products fetched successfully",
         data: products,
       });
     } catch (error) {
+      console.error(error);
       reply.code(500).send({ status: false, msg: "Something went wrong" });
     }
   });

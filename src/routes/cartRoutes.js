@@ -51,6 +51,16 @@ export default async function cartRoutes(fastify, options) {
     }
   );
 
+  function enrichCartItems(cartItems) {
+    return cartItems.map((item) => {
+      const matchingVariation = item.productId.variations.find(
+        (variation) => variation._id.toString() === item.variationId.toString()
+      );
+
+      return { ...item.toObject(), variation: matchingVariation.toObject() };
+    });
+  }
+
   fastify.get(
     "/api/cart",
     { preValidation: [fastify.authenticate] },
@@ -59,16 +69,22 @@ export default async function cartRoutes(fastify, options) {
         const userId = request.user?.userId;
 
         const cart = await Cart.findOne({ userId }).populate("items.productId");
-        console.log(cart);
 
         if (!cart) {
           return reply
             .code(404)
             .send({ status: false, message: "Cart not found" });
         }
-        reply.send({ status: true, data: cart });
-      } catch (err) {
-        reply.code(500).send({ status: false, error: "Failed to fetch cart" });
+        reply.send({
+          status: true,
+          data: { ...cart.toObject(), items: enrichCartItems(cart.items) },
+        });
+      } catch (error) {
+        reply.code(500).send({
+          status: false,
+          // error: "Failed to fetch cart",
+          error: error.message,
+        });
       }
     }
   );
@@ -78,8 +94,13 @@ export default async function cartRoutes(fastify, options) {
     { preValidation: [fastify.authenticate] },
     async (request, reply) => {
       try {
-        const userId = request.user?.userId;
         const { productId, variationId, quantity } = request.body;
+        const userId = request.user?.userId;
+        console.log("Updating quantity:", {
+          variationId,
+          productId,
+          quantity,
+        });
 
         const cart = await Cart.findOne({ userId });
         if (!cart) {
@@ -111,11 +132,12 @@ export default async function cartRoutes(fastify, options) {
   );
 
   fastify.delete(
-    "/api/cart/:userId/:productId/:variationId",
+    "/api/cart/:productId/:variationId",
+    { preValidation: [fastify.authenticate] },
     async (request, reply) => {
       try {
+        const { productId, variationId } = request.params;
         const userId = request.user?.userId;
-        const { productId, variationId } = request.body;
 
         const cart = await Cart.findOne({ userId });
         if (!cart) {
@@ -126,7 +148,7 @@ export default async function cartRoutes(fastify, options) {
 
         cart.items = cart.items.filter(
           (item) =>
-            item.productId.toString() !== productId ||
+            item.productId.toString() !== productId &&
             item.variationId.toString() !== variationId
         );
 
@@ -140,29 +162,32 @@ export default async function cartRoutes(fastify, options) {
     }
   );
 
-  fastify.delete("/api/cart/:userId", async (request, reply) => {
-    const { userId } = request.body;
+  fastify.delete(
+    "/api/cart",
+    { preValidation: [fastify.authenticate] },
+    async (request, reply) => {
+      const userId = request.user?.userId;
 
-    try {
-      const cart = await Cart.findOneAndUpdate(
-        { userId },
-        { $set: { items: [] } },
-        { new: true }
-      );
+      try {
+        const cart = await Cart.findOneAndUpdate(
+          { userId },
+          { $set: { items: [] } },
+          { new: true }
+        );
+        if (!cart) {
+          return reply
+            .code(404)
+            .send({ status: false, message: "Cart not found" });
+        }
 
-      if (!cart) {
-        return reply
-          .code(404)
-          .send({ status: false, message: "Cart not found" });
+        reply.send({
+          status: true,
+          message: "Cart cleared successfully",
+          data: cart,
+        });
+      } catch (err) {
+        reply.code(500).send(err.message);
       }
-
-      reply.send({
-        status: true,
-        message: "Cart cleared successfully",
-        data: cart,
-      });
-    } catch (err) {
-      reply.code(500).send(err.message);
     }
-  });
+  );
 }
