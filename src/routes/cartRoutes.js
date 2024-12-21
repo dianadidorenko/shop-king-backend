@@ -68,13 +68,22 @@ export default async function cartRoutes(fastify, options) {
       try {
         const userId = request.user?.userId;
 
+        if (!userId) {
+          return reply.send({
+            status: true,
+            data: { items: [] },
+          });
+        }
+
         const cart = await Cart.findOne({ userId }).populate("items.productId");
 
         if (!cart) {
-          return reply
-            .code(404)
-            .send({ status: false, message: "Cart not found" });
+          return reply.send({
+            status: true,
+            data: { items: [] },
+          });
         }
+
         reply.send({
           status: true,
           data: { ...cart.toObject(), items: enrichCartItems(cart.items) },
@@ -82,7 +91,6 @@ export default async function cartRoutes(fastify, options) {
       } catch (error) {
         reply.code(500).send({
           status: false,
-          // error: "Failed to fetch cart",
           error: error.message,
         });
       }

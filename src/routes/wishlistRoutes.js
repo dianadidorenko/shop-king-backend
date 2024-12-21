@@ -53,8 +53,8 @@ export default async function wishlistRoutes(fastify, options) {
         const wishlist = await WishList.findOne({ user }).populate("product");
         if (!wishlist) {
           return reply
-            .status(404)
-            .send({ status: false, message: "Wishlist not found" });
+            .status(200)
+            .send({ status: true, data: { product: [] } });
         }
 
         reply.status(200).send({ status: true, data: wishlist });

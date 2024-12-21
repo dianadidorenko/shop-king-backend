@@ -13,6 +13,7 @@ import categoryRoutes from "./routes/categoryRoutes.js";
 import brandRoutes from "./routes/brandRoutes.js";
 import wishlistRoutes from "./routes/wishlistRoutes.js";
 import cartRoutes from "./routes/cartRoutes.js";
+import dashboardRoutes from "./routes/dashboardRoutes.js";
 
 dotenv.config();
 
@@ -39,6 +40,7 @@ fastify.register(categoryRoutes);
 fastify.register(brandRoutes);
 fastify.register(wishlistRoutes);
 fastify.register(cartRoutes);
+fastify.register(dashboardRoutes);
 
 fastify.decorate("authenticate", async function (req, reply) {
   try {

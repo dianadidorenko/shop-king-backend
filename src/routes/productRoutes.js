@@ -55,6 +55,8 @@ export default async function productRoutes(fastify, options) {
         refundable,
         sortBy,
         search,
+        page = 1,
+        limit = 10,
       } = req.query;
 
       const filter = {};
@@ -119,12 +121,22 @@ export default async function productRoutes(fastify, options) {
         : {};
 
       // Fetch filtered and sorted products
-      const products = await Product.find(filter).sort(sortOptions);
+      // Подсчёт общего количества товаров
+      const totalCount = await Product.countDocuments(filter);
+
+      // Пагинация
+      const skip = (page - 1) * limit; // Сколько товаров пропустить
+      const products = await Product.find(filter)
+        .sort(sortOptions)
+        .skip(skip)
+        .limit(Number(limit));
+      // const products = await Product.find(filter).sort(sortOptions);
 
       reply.code(200).send({
         status: true,
         msg: "Products fetched successfully",
         data: products,
+        totalCount,
       });
     } catch (error) {
       console.error(error);
